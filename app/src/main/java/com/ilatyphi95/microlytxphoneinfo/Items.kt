@@ -1,0 +1,17 @@
+package com.ilatyphi95.microlytxphoneinfo
+
+enum class Items {
+    MOBILE_COUNTRY_CODE,
+    MOBILE_NETWORK_CODE,
+    LOCAL_AREA_CODE,
+    CELL_IDENTITY,
+    CELL_ID,
+    MOBILE_NETWORK_TECHNOLOGY,
+    SIGNAL_STRENGTH,
+    OPERATOR_NAME,
+    CELL_CONNECTION_STATUS,
+    HANDSET_MAKE,
+    ITEM_MODEL,
+    LONGITUDE,
+    LATITUDE,
+}
