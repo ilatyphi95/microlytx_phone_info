@@ -7,15 +7,17 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import android.telephony.TelephonyManager
 import androidx.annotation.RequiresPermission
-import androidx.lifecycle.*
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 
 const val NOT_AVAILABLE = -1
 const val REQUIRE_PERMISSION = -101
 class MainActivityViewModel(application: Application) : AndroidViewModel(application) {
 
     private val app = application
-    private val NOT_AVAILABLE_STRING = application.getString(R.string.not_available)
-    private val REQUIRE_PERMISSION_STRING = application.getString(R.string.require_permission)
+    private val notAvailable = application.getString(R.string.not_available)
+    private val requirePermission = application.getString(R.string.require_permission)
 
     private val _infoList = MutableLiveData<List<PhoneItem>>()
     val infoList : LiveData<List<PhoneItem>> = _infoList
@@ -24,41 +26,52 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
         _infoList.value = ItemList().getPhoneInfoList()
     }
 
-    private fun replaceItem(oldList: List<PhoneItem>, newItem: PhoneItem) : List<PhoneItem> {
-        val infos = oldList.toMutableList()
-        val oldItem = infos.find { it.id == newItem.id }
-        val index = infos.indexOf(oldItem)
-        infos.removeAt(index)
-        infos.add(index, newItem)
-        return infos.toList()
+    fun updateInfoInt(newItems: List<Pair<Items, Int>>) {
+        updateInfo( convertIntPairToStringPair(newItems) )
     }
 
-    fun updateInfo(items: List<PhoneItem>) {
+    fun updateInfo(newItems: List<Pair<Items, String>>) {
+        val items = convertItemsToPhoneItems(newItems)
+        updateThreadSafe(items)
+
+    }
+
+    @Synchronized private fun updateThreadSafe(items: List<PhoneItem>) {
         var myList = _infoList.value!!
-        items.forEach{
-            myList = replaceItem(myList, it)
+        items.forEach {
+            myList = replaceItems(myList, it)
         }
         _infoList.value = myList
     }
 
-    fun addListInt(myList: List<Pair<Items, Int>>) : List<PhoneItem> {
-        val list = mutableListOf<Pair<Items, String>>()
+    private fun replaceItems(oldList: List<PhoneItem>, newItem: PhoneItem) : List<PhoneItem> {
+        val info = oldList.toMutableList()
+        val oldItem = info.find { it.id == newItem.id }
+        val index = info.indexOf(oldItem)
+        info.removeAt(index)
+        info.add(index, newItem)
+        return info.toList()
+    }
 
-        myList.forEach{ pair ->
+    private fun convertIntPairToStringPair(intItems: List<Pair<Items, Int>>) :
+            List<Pair<Items, String>> {
+
+        val stringItems = mutableListOf<Pair<Items, String>>()
+
+        intItems.forEach{ pair ->
 
             val second = when(pair.second) {
-                NOT_AVAILABLE -> NOT_AVAILABLE_STRING
-                REQUIRE_PERMISSION -> REQUIRE_PERMISSION_STRING
+                NOT_AVAILABLE -> notAvailable
+                REQUIRE_PERMISSION -> requirePermission
                 else -> pair.second.toString()
             }
 
-            list.add(Pair(pair.first, second))
-        }
+            stringItems.add(Pair(pair.first, second)) }
 
-        return addList(list)
+        return stringItems
     }
 
-    fun addList(myList: List<Pair<Items, String>>) : List<PhoneItem> {
+    private fun convertItemsToPhoneItems(myList: List<Pair<Items, String>>) : List<PhoneItem> {
         val phoneItemList = mutableListOf<PhoneItem>()
 
         myList.forEach {
@@ -85,7 +98,7 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
         return phoneItemList
     }
 
-    fun addNetworkInfo(
+    fun updateNetworkInfo(
             mcc: Int = NOT_AVAILABLE,
             mnc: Int = NOT_AVAILABLE,
             signalStrength: Int = NOT_AVAILABLE,
@@ -93,19 +106,17 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
             ci: Int = NOT_AVAILABLE,
             lac: Int = NOT_AVAILABLE) {
 
-        val infoList = addListInt(listOf(
+        updateInfoInt(listOf(
                 Pair(Items.MOBILE_COUNTRY_CODE, mcc),
                 Pair(Items.MOBILE_NETWORK_CODE, mnc),
                 Pair(Items.SIGNAL_STRENGTH, signalStrength),
                 Pair(Items.CELL_ID, cid),
                 Pair(Items.CELL_IDENTITY, ci),
                 Pair(Items.LOCAL_AREA_CODE, lac)))
-
-        updateInfo(infoList)
     }
 
     @RequiresPermission(android.Manifest.permission.ACCESS_NETWORK_STATE)
-    fun connectionStatus() {
+    fun updateConnectionStatus() {
         var result = R.string.no_connection
         val connectivityManager =
                 app.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -136,7 +147,7 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
             }
         }
 
-        updateInfo(addList(listOf(Pair(Items.CELL_CONNECTION_STATUS, app.getString(result)))))
+        updateInfo(listOf(Pair(Items.CELL_CONNECTION_STATUS, app.getString(result))))
     }
 
 
@@ -146,14 +157,6 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
 
         val result = getNetworkType(telephonyManager.networkType)
 
-        updateInfo(addList(listOf(Pair(Items.MOBILE_NETWORK_TECHNOLOGY, app.getString(result)))))
+        updateInfo(listOf(Pair(Items.MOBILE_NETWORK_TECHNOLOGY, app.getString(result))))
     }
 }
-
-class MainActivityViewModelFactory(private val application: Application)
-    : ViewModelProvider.Factory {
-
-    override fun <T : ViewModel?> create(modelClass: Class<T>): T
-        = modelClass.getConstructor(Application::class.java).newInstance(application)
-
-    }

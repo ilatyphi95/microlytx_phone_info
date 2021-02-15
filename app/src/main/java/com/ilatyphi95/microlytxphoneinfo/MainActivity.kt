@@ -44,14 +44,12 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-        val list: List<PhoneItem> = viewModel.addList(
+        viewModel.updateInfo(
                 listOf(
                         Pair(Items.HANDSET_MAKE, Build.MANUFACTURER),
                         Pair(Items.ITEM_MODEL, Build.MODEL),
                 )
         )
-
-        viewModel.updateInfo(list)
 
         updateConnectionStatus()
         updateNetwork()
@@ -61,7 +59,7 @@ class MainActivity : AppCompatActivity() {
             val id = getDefaultDataSubscriptionId(subscriptionManager)
 
             if(subscriptionManager.activeSubscriptionInfoList.size < 1 ) {
-                viewModel.addNetworkInfo()
+                viewModel.updateNetworkInfo()
                 return
             }
 
@@ -74,7 +72,7 @@ class MainActivity : AppCompatActivity() {
             val mnc = subInfo.mnc
 
             val operatorName = subInfo.carrierName
-            viewModel.updateInfo(viewModel.addList(listOf(Pair(Items.OPERATOR_NAME, operatorName.toString()))))
+            viewModel.updateInfo(listOf(Pair(Items.OPERATOR_NAME, operatorName.toString())))
 
             operatorInfo.addAll(listOf(
                     Pair(Items.MOBILE_COUNTRY_CODE, mcc),
@@ -125,13 +123,13 @@ class MainActivity : AppCompatActivity() {
                         }
 
                         else -> {
-                            viewModel.addNetworkInfo()
+                            viewModel.updateNetworkInfo()
                         }
                     }
                 }
             }
 
-            viewModel.updateInfo(viewModel.addListInt(operatorInfo))
+            viewModel.updateInfoInt(operatorInfo)
 //        } else {
             // work this out later
         }
@@ -139,7 +137,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateConnectionStatus() {
-        viewModel.connectionStatus()
+        viewModel.updateConnectionStatus()
     }
 
     private fun updateNetwork() {
