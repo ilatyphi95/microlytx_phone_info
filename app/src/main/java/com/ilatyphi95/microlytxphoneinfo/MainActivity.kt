@@ -1,29 +1,29 @@
 package com.ilatyphi95.microlytxphoneinfo
 
 import android.Manifest
-import android.annotation.SuppressLint
-import android.content.pm.PackageManager
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.telephony.*
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
-import com.google.android.material.snackbar.Snackbar
 import com.ilatyphi95.microlytxphoneinfo.databinding.ActivityMainBinding
+import pub.devrel.easypermissions.AfterPermissionGranted
 import pub.devrel.easypermissions.EasyPermissions
 
 
+const val requestPhoneInfo = 109
+const val requestReadPhoneState = 209
+const val requestAccessFineLocation = 309
+const val requestAllAccess = 409
 class MainActivity : AppCompatActivity() {
 
     lateinit var binding : ActivityMainBinding
     lateinit var viewModel : MainActivityViewModel
     private lateinit var locationService : LocationService
-    private val locationRequestCode = 109
 
     private val locationCallback = object : LocationCallback() {
 
@@ -51,13 +51,7 @@ class MainActivity : AppCompatActivity() {
         viewModel =
             ViewModelProvider(this, viewModelFactory).get(MainActivityViewModel::class.java)
 
-        val itemAdapter = ItemAdapter { position, itemAtPosition ->
-            Snackbar.make(
-                    binding.root,
-                    "${getString(itemAtPosition.title)} is at position $position",
-                    Snackbar.LENGTH_LONG
-            ).show()
-        }
+        val itemAdapter = ItemAdapter { pos, item -> recyclerItemClicked(pos, item) }
 
         binding.recycler.adapter = itemAdapter
         viewModel.infoList.observe(this) {
@@ -65,22 +59,71 @@ class MainActivity : AppCompatActivity() {
         }
 
 
-        viewModel.updateInfo(
-                listOf(
-                        Pair(Items.HANDSET_MAKE, Build.MANUFACTURER),
-                        Pair(Items.ITEM_MODEL, Build.MODEL),
-                )
-        )
+        askPermission(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.READ_PHONE_STATE,
+            Manifest.permission.ACCESS_NETWORK_STATE,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            permRational = getString(R.string.all_permission_rational),
+            requestCode = requestAllAccess
+        ) {}
 
+        updateManufacturerInfo()
         updateConnectionStatus()
         updateNetwork()
-        subscribeForLocationUpdate()
-
+        updateLocation()
         updateNetworkInfo()
     }
 
+
+    private fun recyclerItemClicked(position: Int, item: PhoneItem) {
+        when(item.id) {
+
+            Items.LONGITUDE, Items.LATITUDE ->
+                askPermission(Manifest.permission.ACCESS_FINE_LOCATION,
+                    requestCode = requestAccessFineLocation,
+                    permRational = getString(R.string.access_fine_location_rational)) { updateLocation() }
+
+            Items.MOBILE_COUNTRY_CODE, Items.MOBILE_NETWORK_CODE,
+            Items.MOBILE_NETWORK_TECHNOLOGY, Items.OPERATOR_NAME ->
+                askPermission(Manifest.permission.READ_PHONE_STATE,
+                    permRational = getString(R.string.access_fine_location_rational),
+                    requestCode = requestReadPhoneState) {
+                    updateNetwork()
+                    updateNetworkInfo()
+                }
+
+            Items.LOCAL_AREA_CODE, Items.CELL_IDENTITY,
+            Items.CELL_ID, Items.SIGNAL_STRENGTH -> {
+                askPermission(Manifest.permission.READ_PHONE_STATE, Manifest.permission.ACCESS_FINE_LOCATION,
+                    permRational = getString(R.string.read_phone_state_rational),
+                    requestCode = requestPhoneInfo) { updateNetworkInfo() }
+            }
+
+            else -> {
+                // Do nothing
+            }
+        }
+    }
+
+    private fun updateManufacturerInfo() {
+        viewModel.updateInfo(
+            listOf(
+                Pair(Items.HANDSET_MAKE, Build.MANUFACTURER),
+                Pair(Items.ITEM_MODEL, Build.MODEL),
+            )
+        )
+    }
+
+    @AfterPermissionGranted(requestPhoneInfo)
     private fun updateNetworkInfo() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+
+            if(viewModel.checkPermission(Manifest.permission.READ_PHONE_STATE,
+                listOf(Items.MOBILE_NETWORK_CODE, Items.MOBILE_COUNTRY_CODE,
+                    Items.OPERATOR_NAME, Items.LOCAL_AREA_CODE,
+                    Items.CELL_ID, Items.CELL_IDENTITY, Items.SIGNAL_STRENGTH))) return
+
             val subscriptionManager =
                 getSystemService(TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
             val id = getDefaultDataSubscriptionId(subscriptionManager)
@@ -108,11 +151,12 @@ class MainActivity : AppCompatActivity() {
                 )
             )
 
-            if (ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
+            if (viewModel.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION,
+                    listOf(Items.LOCAL_AREA_CODE,Items.CELL_ID, Items.CELL_IDENTITY,
+                        Items.SIGNAL_STRENGTH))) {
+                viewModel.updateInfoInt(operatorInfo)
+                return
+                }
 
                 val activeCells = phoneManager.allCellInfo.filter { it.isRegistered }
 
@@ -122,31 +166,18 @@ class MainActivity : AppCompatActivity() {
                             val identity = cellInfo.cellIdentity
 
                             if (identity.mcc == mcc && identity.mnc == mnc) {
-                                operatorInfo.addAll(
-                                    listOf(
-                                        Pair(
-                                            Items.SIGNAL_STRENGTH,
-                                            cellInfo.cellSignalStrength.level
-                                        ),
-                                        Pair(Items.CELL_IDENTITY, identity.cid),
-                                        Pair(Items.LOCAL_AREA_CODE, identity.lac),
-                                    )
-                                )
+                                viewModel.updateNetworkInfo(mcc = mcc, mnc = mnc,
+                                    signalStrength = cellInfo.cellSignalStrength.level,
+                                    cid = identity.cid, lac = identity.lac)
                             }
                         }
                         is CellInfoWcdma -> {
                             val identity = cellInfo.cellIdentity
                             if (identity.mcc == mcc && identity.mnc == mnc) {
-                                operatorInfo.addAll(
-                                    listOf(
-                                        Pair(
-                                            Items.SIGNAL_STRENGTH,
-                                            cellInfo.cellSignalStrength.level
-                                        ),
-                                        Pair(Items.CELL_IDENTITY, identity.cid),
-                                        Pair(Items.LOCAL_AREA_CODE, identity.lac),
-                                    )
-                                )
+
+                                viewModel.updateNetworkInfo(mcc = mcc, mnc = mnc,
+                                    signalStrength = cellInfo.cellSignalStrength.level,
+                                    cid = identity.cid, lac = identity.lac)
                             }
                         }
                         is CellInfoCdma -> {
@@ -155,15 +186,9 @@ class MainActivity : AppCompatActivity() {
                         is CellInfoLte -> {
                             val identity = cellInfo.cellIdentity
                             if (identity.mcc == mcc && identity.mnc == mnc) {
-                                operatorInfo.addAll(
-                                    listOf(
-                                        Pair(
-                                            Items.SIGNAL_STRENGTH,
-                                            cellInfo.cellSignalStrength.level
-                                        ),
-                                        Pair(Items.CELL_ID, identity.ci),
-                                    )
-                                )
+
+                                viewModel.updateNetworkInfo(mcc = mcc, mnc = mnc, ci = identity.ci,
+                                    signalStrength = cellInfo.cellSignalStrength.level)
                             }
                         }
 
@@ -172,9 +197,8 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
-            }
 
-            viewModel.updateInfoInt(operatorInfo)
+//            viewModel.updateInfoInt(operatorInfo)
     //        } else {
             // work this out later
         }
@@ -182,13 +206,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            locationService.getLocationUpdate(locationCallback)
-        }
+        updateLocation()
     }
 
     override fun onPause() {
@@ -200,11 +218,20 @@ class MainActivity : AppCompatActivity() {
         viewModel.updateConnectionStatus()
     }
 
+    @AfterPermissionGranted(requestReadPhoneState)
     private fun updateNetwork() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
-            return
-        }
-        viewModel.updateNetworkType()
+
+        if (viewModel.checkPermission(Manifest.permission.READ_PHONE_STATE,
+                listOf(Items.MOBILE_NETWORK_TECHNOLOGY))) return
+
+
+        val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+
+        val value = getString(getNetworkType(telephonyManager.networkType))
+
+        viewModel.updateInfo(listOf(
+                Pair(Items.MOBILE_NETWORK_TECHNOLOGY, value)
+            ))
     }
 
     override fun onRequestPermissionsResult(
@@ -217,12 +244,20 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    @SuppressLint("MissingPermission")
-    fun subscribeForLocationUpdate() {
-        if(EasyPermissions.hasPermissions(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
-            locationService.getLocationUpdate(locationCallback)
+    @AfterPermissionGranted(requestAccessFineLocation)
+    private fun updateLocation() {
+        if(viewModel.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION,
+                listOf(Items.LATITUDE, Items.LONGITUDE))) return
+
+        locationService.getLocationUpdate(locationCallback)
+    }
+
+    private fun askPermission(vararg permString: String, requestCode: Int,
+                              permRational: String, callback: () -> Unit) {
+        if(EasyPermissions.hasPermissions(this, *permString)) {
+            callback()
         } else {
-            EasyPermissions.requestPermissions(this, "Need Location", locationRequestCode, Manifest.permission.ACCESS_FINE_LOCATION)
+            EasyPermissions.requestPermissions(this, permRational, requestCode, *permString)
         }
     }
 }

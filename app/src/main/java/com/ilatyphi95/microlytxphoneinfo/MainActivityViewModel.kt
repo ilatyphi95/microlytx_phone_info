@@ -2,11 +2,11 @@ package com.ilatyphi95.microlytxphoneinfo
 
 import android.app.Application
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
-import android.telephony.TelephonyManager
-import androidx.annotation.RequiresPermission
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -66,7 +66,8 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
                 else -> pair.second.toString()
             }
 
-            stringItems.add(Pair(pair.first, second)) }
+            stringItems.add(Pair(pair.first, second))
+        }
 
         return stringItems
     }
@@ -91,7 +92,6 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
                 Items.LONGITUDE -> R.string.longitude
                 Items.LATITUDE -> R.string.latitude
             }
-
             phoneItemList.add(PhoneItem(it.first, valueRes, it.second))
         }
 
@@ -115,7 +115,6 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
                 Pair(Items.LOCAL_AREA_CODE, lac)))
     }
 
-    @RequiresPermission(android.Manifest.permission.ACCESS_NETWORK_STATE)
     fun updateConnectionStatus() {
         var result = R.string.no_connection
         val connectivityManager =
@@ -146,17 +145,21 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
                 }
             }
         }
-
         updateInfo(listOf(Pair(Items.CELL_CONNECTION_STATUS, app.getString(result))))
     }
 
+    fun checkPermission(permString: String, affectedItems: List<Items>): Boolean {
 
-    @RequiresPermission(android.Manifest.permission.READ_PHONE_STATE)
-    fun updateNetworkType() {
-        val telephonyManager = app.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+        if (ActivityCompat.checkSelfPermission(app, permString) != PackageManager.PERMISSION_GRANTED) {
+            val itemList = mutableListOf<Pair<Items, String>>()
 
-        val result = getNetworkType(telephonyManager.networkType)
+            affectedItems.forEach{
+                itemList.add(Pair(it, requirePermission))
+            }
 
-        updateInfo(listOf(Pair(Items.MOBILE_NETWORK_TECHNOLOGY, app.getString(result))))
+            updateInfo(itemList)
+            return true
+        }
+        return false
     }
 }
