@@ -8,14 +8,14 @@ import androidx.recyclerview.widget.RecyclerView
 import com.ilatyphi95.microlytxphoneinfo.databinding.ItemLayoutBinding
 
 class ItemAdapter(
-    val onClick: (position: Int, itemAtPosition: PhoneItem) -> Unit
+    private val buttonClicked: (PhoneItem) -> Unit
 ) : ListAdapter<PhoneItem, ItemAdapter.ViewHolder>(diffCallback) {
 
     inner class ViewHolder(private val binding: ItemLayoutBinding, onItemClick: (position: Int) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
 
         init {
-            itemView.setOnClickListener { onItemClick(adapterPosition) }
+            binding.button.setOnClickListener { onItemClick(adapterPosition) }
         }
 
         fun bind(viewmodel: PhoneItem) {
@@ -30,7 +30,7 @@ class ItemAdapter(
         return ViewHolder(binding = binding,
             onItemClick = { position ->
                 val itemAtPosition = getItem(position)
-                this.onClick(position, itemAtPosition)
+                buttonClicked(itemAtPosition)
             }
         )
     }

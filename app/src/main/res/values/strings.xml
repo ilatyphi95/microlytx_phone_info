@@ -34,4 +34,5 @@
     <string name="read_phone_state_rational">Read phone state</string>
     <string name="access_fine_location_rational">Access Fine Location</string>
     <string name="all_permission_rational">The Following permissions are required</string>
+    <string name="grant">Grant</string>
 </resources>

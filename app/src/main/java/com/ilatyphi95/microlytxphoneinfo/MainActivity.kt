@@ -8,6 +8,7 @@ import android.telephony.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.DividerItemDecoration
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
 import com.ilatyphi95.microlytxphoneinfo.databinding.ActivityMainBinding
@@ -58,9 +59,12 @@ class MainActivity : AppCompatActivity() {
         viewModel =
             ViewModelProvider(this, viewModelFactory).get(MainActivityViewModel::class.java)
 
-        val itemAdapter = ItemAdapter { pos, item -> recyclerItemClicked(pos, item) }
+        val itemAdapter = ItemAdapter { item -> recyclerItemClicked(item) }
 
-        binding.recycler.adapter = itemAdapter
+        binding.recycler.apply {
+            adapter = itemAdapter
+            addItemDecoration(DividerItemDecoration(this.context, DividerItemDecoration.VERTICAL))
+        }
         viewModel.infoList.observe(this) {
             itemAdapter.submitList(it)
         }
@@ -83,7 +87,7 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun recyclerItemClicked(position: Int, item: PhoneItem) {
+    private fun recyclerItemClicked(item: PhoneItem) {
         when(item.id) {
 
             Items.LONGITUDE, Items.LATITUDE ->
