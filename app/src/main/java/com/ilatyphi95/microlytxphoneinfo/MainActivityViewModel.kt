@@ -23,7 +23,7 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
     val infoList : LiveData<List<PhoneItem>> = _infoList
 
     init {
-        _infoList.value = ItemList().getPhoneInfoList()
+        _infoList.value = ItemList().getPhoneInfoList(app)
     }
 
     fun updateInfoInt(newItems: List<Pair<Items, Int>>) {

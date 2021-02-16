@@ -28,12 +28,19 @@ class MainActivity : AppCompatActivity() {
     private val locationCallback = object : LocationCallback() {
 
         override fun onLocationResult(location: LocationResult?) {
-            location?.let { locationResult ->
-                val latLon = locationResult.lastLocation
+            if(location != null) {
+                val latLon = location.lastLocation
                 viewModel.updateInfo(
                     listOf(
                         Pair(Items.LATITUDE, latLon.latitude.toString()),
                         Pair(Items.LONGITUDE, latLon.longitude.toString())
+                    )
+                )
+            } else {
+                viewModel.updateInfoInt(
+                    listOf(
+                        Pair(Items.LATITUDE, NOT_AVAILABLE),
+                        Pair(Items.LONGITUDE, NOT_AVAILABLE)
                     )
                 )
             }
@@ -243,11 +250,15 @@ class MainActivity : AppCompatActivity() {
         EasyPermissions.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
-
     @AfterPermissionGranted(requestAccessFineLocation)
     private fun updateLocation() {
         if(viewModel.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION,
                 listOf(Items.LATITUDE, Items.LONGITUDE))) return
+
+        viewModel.updateInfoInt(listOf(
+            Pair(Items.LATITUDE, NOT_AVAILABLE),
+            Pair(Items.LONGITUDE, NOT_AVAILABLE)
+        ))
 
         locationService.getLocationUpdate(locationCallback)
     }
