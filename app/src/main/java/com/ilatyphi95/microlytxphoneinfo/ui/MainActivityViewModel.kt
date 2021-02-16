@@ -1,4 +1,4 @@
-package com.ilatyphi95.microlytxphoneinfo
+package com.ilatyphi95.microlytxphoneinfo.ui
 
 import android.app.Application
 import android.content.Context
@@ -10,6 +10,10 @@ import androidx.core.app.ActivityCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.ilatyphi95.microlytxphoneinfo.R
+import com.ilatyphi95.microlytxphoneinfo.data.ItemList
+import com.ilatyphi95.microlytxphoneinfo.data.Items
+import com.ilatyphi95.microlytxphoneinfo.data.PhoneItem
 
 const val NOT_AVAILABLE = -1
 const val REQUIRE_PERMISSION = -101
@@ -99,12 +103,13 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
     }
 
     fun updateNetworkInfo(
-            mcc: Int = NOT_AVAILABLE,
-            mnc: Int = NOT_AVAILABLE,
-            signalStrength: Int = NOT_AVAILABLE,
-            cid: Int = NOT_AVAILABLE,
-            ci: Int = NOT_AVAILABLE,
-            lac: Int = NOT_AVAILABLE) {
+        mcc: Int = NOT_AVAILABLE,
+        mnc: Int = NOT_AVAILABLE,
+        signalStrength: Int = NOT_AVAILABLE,
+        cid: Int = NOT_AVAILABLE,
+        ci: Int = NOT_AVAILABLE,
+        lac: Int = NOT_AVAILABLE
+    ) {
 
         updateInfoInt(listOf(
                 Pair(Items.MOBILE_COUNTRY_CODE, mcc),

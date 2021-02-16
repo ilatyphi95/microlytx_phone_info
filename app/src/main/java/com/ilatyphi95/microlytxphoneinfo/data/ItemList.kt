@@ -1,7 +1,8 @@
-package com.ilatyphi95.microlytxphoneinfo
+package com.ilatyphi95.microlytxphoneinfo.data
 
 import android.app.Application
-import com.ilatyphi95.microlytxphoneinfo.Items.*
+import com.ilatyphi95.microlytxphoneinfo.R
+import com.ilatyphi95.microlytxphoneinfo.data.Items.*
 
 class ItemList {
 

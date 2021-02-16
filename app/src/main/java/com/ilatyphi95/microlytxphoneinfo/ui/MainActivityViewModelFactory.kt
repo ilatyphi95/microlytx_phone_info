@@ -1,4 +1,4 @@
-package com.ilatyphi95.microlytxphoneinfo
+package com.ilatyphi95.microlytxphoneinfo.ui
 
 import android.app.Application
 import androidx.lifecycle.ViewModel

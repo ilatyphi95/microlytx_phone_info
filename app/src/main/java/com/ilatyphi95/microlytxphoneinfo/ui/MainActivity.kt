@@ -1,4 +1,4 @@
-package com.ilatyphi95.microlytxphoneinfo
+package com.ilatyphi95.microlytxphoneinfo.ui
 
 import android.Manifest
 import android.content.Context
@@ -17,7 +17,14 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
 import com.google.android.material.snackbar.Snackbar
+import com.ilatyphi95.microlytxphoneinfo.BuildConfig
+import com.ilatyphi95.microlytxphoneinfo.R
+import com.ilatyphi95.microlytxphoneinfo.data.Items
+import com.ilatyphi95.microlytxphoneinfo.data.PhoneItem
 import com.ilatyphi95.microlytxphoneinfo.databinding.ActivityMainBinding
+import com.ilatyphi95.microlytxphoneinfo.getDefaultDataSubscriptionId
+import com.ilatyphi95.microlytxphoneinfo.getNetworkType
+import com.ilatyphi95.microlytxphoneinfo.utils.LocationService
 import pub.devrel.easypermissions.EasyPermissions
 
 
@@ -74,7 +81,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             itemAdapter.submitList(it)
         }
 
-
         askPermission(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.READ_PHONE_STATE,
@@ -82,11 +88,10 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             Manifest.permission.ACCESS_COARSE_LOCATION,
             permRational = getString(R.string.all_permission_rational),
             requestCode = requestAllAccess
-        ) {}
+        )
 
         refreshPage()
     }
-
 
     private fun recyclerItemClicked(item: PhoneItem) {
         when(item.id) {
@@ -96,10 +101,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     requestCode = requestAccessFineLocation,
                     permRational = getString(R.string.access_fine_location_rational)
-                ) {
-                    updateLocation()
-                    updateNetworkInfo()
-                }
+                )
 
             Items.MOBILE_COUNTRY_CODE, Items.MOBILE_NETWORK_CODE,
             Items.MOBILE_NETWORK_TECHNOLOGY, Items.OPERATOR_NAME ->
@@ -107,10 +109,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
                     Manifest.permission.READ_PHONE_STATE,
                     permRational = getString(R.string.access_fine_location_rational),
                     requestCode = requestReadPhoneState
-                ) {
-                    updateNetwork()
-                    updateNetworkInfo()
-                }
+                )
 
             Items.LOCAL_AREA_CODE, Items.CELL_IDENTITY,
             Items.CELL_ID, Items.SIGNAL_STRENGTH -> {
@@ -118,7 +117,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
                     Manifest.permission.READ_PHONE_STATE, Manifest.permission.ACCESS_FINE_LOCATION,
                     permRational = getString(R.string.read_phone_state_rational),
                     requestCode = requestPhoneInfo
-                ) { updateNetworkInfo() }
+                )
             }
 
             else -> {
@@ -240,7 +239,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
     override fun onResume() {
         super.onResume()
-        updateLocation()
+        refreshPage()
     }
 
     override fun onPause() {
@@ -334,10 +333,9 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
     private fun askPermission(
         vararg permString: String, requestCode: Int,
-        permRational: String, callback: () -> Unit
-    ) {
+        permRational: String) {
         if(EasyPermissions.hasPermissions(this, *permString)) {
-            callback()
+            refreshPage()
         } else {
             EasyPermissions.requestPermissions(this, permRational, requestCode, *permString)
         }

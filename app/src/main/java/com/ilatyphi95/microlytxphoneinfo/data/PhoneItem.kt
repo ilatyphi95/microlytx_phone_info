@@ -1,4 +1,4 @@
-package com.ilatyphi95.microlytxphoneinfo
+package com.ilatyphi95.microlytxphoneinfo.data
 
 import androidx.annotation.StringRes
 

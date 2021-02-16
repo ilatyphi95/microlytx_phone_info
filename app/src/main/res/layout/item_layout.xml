@@ -6,7 +6,7 @@
     <data>
         <variable
             name="viewmodel"
-            type="com.ilatyphi95.microlytxphoneinfo.PhoneItem" />
+            type="com.ilatyphi95.microlytxphoneinfo.data.PhoneItem" />
 
     </data>
 

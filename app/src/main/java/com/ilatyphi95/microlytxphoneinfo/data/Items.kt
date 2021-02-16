@@ -1,4 +1,4 @@
-package com.ilatyphi95.microlytxphoneinfo
+package com.ilatyphi95.microlytxphoneinfo.data
 
 enum class Items {
     MOBILE_COUNTRY_CODE,
