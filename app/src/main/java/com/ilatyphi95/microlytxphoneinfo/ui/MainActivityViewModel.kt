@@ -1,33 +1,65 @@
 package com.ilatyphi95.microlytxphoneinfo.ui
 
+import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.os.Build
+import android.telephony.TelephonyManager
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationResult
 import com.ilatyphi95.microlytxphoneinfo.R
 import com.ilatyphi95.microlytxphoneinfo.data.ItemUtils
 import com.ilatyphi95.microlytxphoneinfo.data.Items
 import com.ilatyphi95.microlytxphoneinfo.data.PhoneItem
+import com.ilatyphi95.microlytxphoneinfo.utils.ConnectionInfo
+import com.ilatyphi95.microlytxphoneinfo.utils.NetworkInfo
+import com.ilatyphi95.microlytxphoneinfo.utils.getNetworkType
 
 const val NOT_AVAILABLE = -1
 const val REQUIRE_PERMISSION = -101
 class MainActivityViewModel(application: Application, private val itemUtils: ItemUtils) : AndroidViewModel(application) {
 
     private val app = application
-    private val notAvailable = application.getString(R.string.not_available)
     private val requirePermission = application.getString(R.string.require_permission)
 
     private val _infoList = MutableLiveData<List<PhoneItem>>()
     val infoList : LiveData<List<PhoneItem>> = _infoList
 
+    private val _receiveLocationUpdate = MutableLiveData<Boolean>()
+    val receiveLocationUpdate : LiveData<Boolean> = _receiveLocationUpdate
+
+
     init {
-        _infoList.value = itemUtils.getPhoneInfoList(app)
+        _infoList.value = itemUtils.getPhoneInfoList()
+        updateManufacturerInfo()
+        updateConnectionStatus()
+    }
+
+    val locationCallback = object : LocationCallback() {
+
+        override fun onLocationResult(location: LocationResult?) {
+            if(location != null) {
+                val latLon = location.lastLocation
+                updateInfo(
+                    listOf(
+                        Pair(Items.LATITUDE, latLon.latitude.toString()),
+                        Pair(Items.LONGITUDE, latLon.longitude.toString())
+                    )
+                )
+            } else {
+                updateInfoInt(
+                    listOf(
+                        Pair(Items.LATITUDE, NOT_AVAILABLE),
+                        Pair(Items.LONGITUDE, NOT_AVAILABLE)
+                    )
+                )
+            }
+        }
     }
 
     fun updateInfoInt(newItems: List<Pair<Items, Int>>) {
@@ -35,107 +67,100 @@ class MainActivityViewModel(application: Application, private val itemUtils: Ite
     }
 
     fun updateInfo(newItems: List<Pair<Items, String>>) {
-        val items = convertItemsToPhoneItems(newItems)
+        val items = itemUtils.convertItemsToPhoneItems(newItems)
         updateThreadSafe(items)
-
     }
 
     @Synchronized private fun updateThreadSafe(items: List<PhoneItem>) {
         var myList = _infoList.value!!
         items.forEach {
-            myList = replaceItems(myList, it)
+            myList = itemUtils.replaceItems(myList, it)
         }
         _infoList.value = myList
     }
 
-    private fun replaceItems(oldList: List<PhoneItem>, newItem: PhoneItem) : List<PhoneItem> {
-        val info = oldList.toMutableList()
-        val oldItem = info.find { it.id == newItem.id }
-        val index = info.indexOf(oldItem)
-        info.removeAt(index)
-        info.add(index, newItem)
-        return info.toList()
+    fun refreshItems() {
+        updateConnectionStatus()
+        updateSubscriberInfo()
+        updateNetworkInfo()
+        updateNetworkTypeInfo()
+        updateLocation()
     }
 
-    private fun convertIntPairToStringPair(intItems: List<Pair<Items, Int>>) :
-            List<Pair<Items, String>> {
+    private fun updateConnectionStatus() {
+        val connectionInfo = ConnectionInfo(app)
+        updateInfo(connectionInfo.getConnectionInfo())
+    }
 
-        val stringItems = mutableListOf<Pair<Items, String>>()
+    private fun updateManufacturerInfo() {
+        updateInfo(
+            listOf(
+                Pair(Items.HANDSET_MAKE, Build.MANUFACTURER),
+                Pair(Items.ITEM_MODEL, Build.MODEL),
+            )
+        )
+    }
 
-        intItems.forEach{ pair ->
+    private fun updateSubscriberInfo() {
+        val networkInfo = NetworkInfo(app, itemUtils)
 
-            val second = when(pair.second) {
-                NOT_AVAILABLE -> notAvailable
-                REQUIRE_PERMISSION -> requirePermission
-                else -> pair.second.toString()
-            }
+        if(checkPermission(
+                Manifest.permission.READ_PHONE_STATE,
+                affectedItems = listOf(Items.MOBILE_NETWORK_CODE, Items.MOBILE_COUNTRY_CODE, Items.OPERATOR_NAME)
+            )) return
 
-            stringItems.add(Pair(pair.first, second))
+        updateInfo(networkInfo.getSubscriberInfo())
+    }
+
+    private fun updateNetworkTypeInfo() {
+
+        if (checkPermission(
+                Manifest.permission.READ_PHONE_STATE,
+                affectedItems = listOf(Items.MOBILE_NETWORK_TECHNOLOGY)
+            )) return
+
+        val telephonyManager = app.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+
+        val value = app.getString(getNetworkType(telephonyManager.networkType))
+
+        updateInfo(
+            listOf(
+                Pair(Items.MOBILE_NETWORK_TECHNOLOGY, value)
+            )
+        )
+    }
+
+    private fun updateNetworkInfo() {
+        val networkInfo = NetworkInfo(app, itemUtils)
+
+        if(checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_PHONE_STATE,
+                affectedItems = listOf(Items.CELL_ID, Items.CELL_IDENTITY, Items.SIGNAL_STRENGTH, Items.LOCAL_AREA_CODE)
+            )) return
+
+        updateInfo(networkInfo.getNetworkInfo())
+    }
+
+
+    fun updateLocation() {
+        if(checkPermission(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                affectedItems = listOf(Items.LATITUDE, Items.LONGITUDE)
+            )) {
+                _receiveLocationUpdate.value = false
+                return
         }
 
-        return stringItems
+        updateInfoInt(
+            listOf(
+                Pair(Items.LATITUDE, NOT_AVAILABLE),
+                Pair(Items.LONGITUDE, NOT_AVAILABLE)
+            )
+        )
+
+        _receiveLocationUpdate.value = true
     }
 
-    private fun convertItemsToPhoneItems(myList: List<Pair<Items, String>>) : List<PhoneItem> {
-        val phoneItemList = mutableListOf<PhoneItem>()
-
-        myList.forEach {
-
-            val valueRes = when(it.first) {
-                Items.MOBILE_COUNTRY_CODE -> R.string.mobile_country_code
-                Items.MOBILE_NETWORK_CODE -> R.string.mobile_network_code
-                Items.LOCAL_AREA_CODE -> R.string.local_area_code
-                Items.CELL_IDENTITY -> R.string.cell_identity
-                Items.CELL_ID -> R.string.cell_id
-                Items.MOBILE_NETWORK_TECHNOLOGY -> R.string.mobile_network_technology
-                Items.SIGNAL_STRENGTH -> R.string.signal_strength
-                Items.OPERATOR_NAME -> R.string.operator_name
-                Items.CELL_CONNECTION_STATUS -> R.string.cell_connection_status
-                Items.HANDSET_MAKE -> R.string.handset_make
-                Items.ITEM_MODEL -> R.string.phone_model
-                Items.LONGITUDE -> R.string.longitude
-                Items.LATITUDE -> R.string.latitude
-            }
-            phoneItemList.add(PhoneItem(it.first, valueRes, it.second))
-        }
-
-        return phoneItemList
-    }
-
-    fun updateConnectionStatus() {
-        var result = R.string.no_connection
-        val connectivityManager =
-                app.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-
-            val networkCapabilities = connectivityManager.activeNetwork
-            val actNw = connectivityManager.getNetworkCapabilities(networkCapabilities)
-            actNw?.let {
-
-                result = when {
-                    actNw.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> R.string.wifi_connection
-                    actNw.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> R.string.cellular_connection
-                    actNw.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> R.string.ethernet_connection
-                    else -> R.string.no_connection
-                }
-            }
-        } else {
-            connectivityManager.run {
-                connectivityManager.activeNetworkInfo?.run {
-                    result = when (type) {
-                        ConnectivityManager.TYPE_WIFI -> R.string.wifi_connection
-                        ConnectivityManager.TYPE_MOBILE -> R.string.cellular_connection
-                        ConnectivityManager.TYPE_ETHERNET -> R.string.ethernet_connection
-                        else -> R.string.no_connection
-                    }
-                }
-            }
-        }
-        updateInfo(listOf(Pair(Items.CELL_CONNECTION_STATUS, app.getString(result))))
-    }
-
-    fun checkPermission(vararg permString: String, affectedItems: List<Items>): Boolean {
+    private fun checkPermission(vararg permString: String, affectedItems: List<Items>): Boolean {
 
         var notGranted = false
 
@@ -151,10 +176,8 @@ class MainActivityViewModel(application: Application, private val itemUtils: Ite
             affectedItems.forEach{
                 itemList.add(Pair(it, requirePermission))
             }
-
             updateInfo(itemList)
         }
-
         return notGranted
     }
 }

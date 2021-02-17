@@ -1,21 +1,19 @@
 package com.ilatyphi95.microlytxphoneinfo.ui
 
 import android.Manifest
-import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.telephony.TelephonyManager
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.DividerItemDecoration
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationResult
 import com.google.android.material.snackbar.Snackbar
 import com.ilatyphi95.microlytxphoneinfo.BuildConfig
 import com.ilatyphi95.microlytxphoneinfo.R
@@ -23,9 +21,7 @@ import com.ilatyphi95.microlytxphoneinfo.data.ItemUtils
 import com.ilatyphi95.microlytxphoneinfo.data.Items
 import com.ilatyphi95.microlytxphoneinfo.data.PhoneItem
 import com.ilatyphi95.microlytxphoneinfo.databinding.ActivityMainBinding
-import com.ilatyphi95.microlytxphoneinfo.utils.getNetworkType
 import com.ilatyphi95.microlytxphoneinfo.utils.LocationService
-import com.ilatyphi95.microlytxphoneinfo.utils.NetworkInfo
 import pub.devrel.easypermissions.EasyPermissions
 
 
@@ -35,32 +31,10 @@ const val requestAccessFineLocation = 309
 const val requestAllAccess = 409
 class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
-    lateinit var binding : ActivityMainBinding
-    lateinit var viewModel : MainActivityViewModel
+    private lateinit var binding : ActivityMainBinding
+    private lateinit var viewModel : MainActivityViewModel
     private lateinit var locationService : LocationService
     private lateinit var itemUtil: ItemUtils
-
-    private val locationCallback = object : LocationCallback() {
-
-        override fun onLocationResult(location: LocationResult?) {
-            if(location != null) {
-                val latLon = location.lastLocation
-                viewModel.updateInfo(
-                    listOf(
-                        Pair(Items.LATITUDE, latLon.latitude.toString()),
-                        Pair(Items.LONGITUDE, latLon.longitude.toString())
-                    )
-                )
-            } else {
-                viewModel.updateInfoInt(
-                    listOf(
-                        Pair(Items.LATITUDE, NOT_AVAILABLE),
-                        Pair(Items.LONGITUDE, NOT_AVAILABLE)
-                    )
-                )
-            }
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,6 +58,18 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             itemAdapter.submitList(it)
         }
 
+        viewModel.receiveLocationUpdate.observe(this) { receiveUpdate ->
+            if(receiveUpdate) {
+                if (ActivityCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+                ) {
+                    locationService.getLocationUpdate(viewModel.locationCallback)
+                }
+            }
+        }
+
         askPermission(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.READ_PHONE_STATE,
@@ -92,8 +78,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             permRational = getString(R.string.all_permission_rational),
             requestCode = requestAllAccess
         )
-
-        refreshPage()
     }
 
     private fun recyclerItemClicked(item: PhoneItem) {
@@ -129,67 +113,14 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         }
     }
 
-    private fun updateManufacturerInfo() {
-        viewModel.updateInfo(
-            listOf(
-                Pair(Items.HANDSET_MAKE, Build.MANUFACTURER),
-                Pair(Items.ITEM_MODEL, Build.MODEL),
-            )
-        )
-    }
-
-    private fun updateSubscriberInfo() {
-        val networkInfo = NetworkInfo(application, itemUtil)
-
-        if(viewModel.checkPermission(Manifest.permission.READ_PHONE_STATE,
-        affectedItems = listOf(Items.MOBILE_NETWORK_CODE, Items.MOBILE_COUNTRY_CODE, Items.OPERATOR_NAME)
-        )) return
-
-        viewModel.updateInfo(networkInfo.getSubscriberInfo())
-
-    }
-    private fun updateNetworkInfo() {
-        val networkInfo = NetworkInfo(application, itemUtil)
-
-        if(viewModel.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_PHONE_STATE,
-        affectedItems = listOf(Items.CELL_ID, Items.CELL_IDENTITY, Items.SIGNAL_STRENGTH, Items.LOCAL_AREA_CODE)
-        )) return
-
-        viewModel.updateInfo(networkInfo.getNetworkInfo())
-
-    }
-
     override fun onResume() {
         super.onResume()
-        refreshPage()
+        viewModel.updateLocation()
     }
 
     override fun onPause() {
-        locationService.removeLocationUpdate(locationCallback)
+        locationService.removeLocationUpdate(viewModel.locationCallback)
         super.onPause()
-    }
-
-    private fun updateConnectionStatus() {
-        viewModel.updateConnectionStatus()
-    }
-
-    private fun updateNetwork() {
-
-        if (viewModel.checkPermission(
-                Manifest.permission.READ_PHONE_STATE,
-                affectedItems = listOf(Items.MOBILE_NETWORK_TECHNOLOGY)
-            )) return
-
-
-        val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-
-        val value = getString(getNetworkType(telephonyManager.networkType))
-
-        viewModel.updateInfo(
-            listOf(
-                Pair(Items.MOBILE_NETWORK_TECHNOLOGY, value)
-            )
-        )
     }
 
     override fun onRequestPermissionsResult(
@@ -202,7 +133,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     }
 
     override fun onPermissionsGranted(requestCode: Int, perms: MutableList<String>) {
-        refreshPage()
+        viewModel.refreshItems()
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
@@ -229,36 +160,11 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         }
     }
 
-    private fun refreshPage() {
-        updateManufacturerInfo()
-        updateConnectionStatus()
-        updateNetwork()
-        updateLocation()
-        updateSubscriberInfo()
-        updateNetworkInfo()
-    }
-
-    private fun updateLocation() {
-        if(viewModel.checkPermission(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                affectedItems = listOf(Items.LATITUDE, Items.LONGITUDE)
-            )) return
-
-        viewModel.updateInfoInt(
-            listOf(
-                Pair(Items.LATITUDE, NOT_AVAILABLE),
-                Pair(Items.LONGITUDE, NOT_AVAILABLE)
-            )
-        )
-
-        locationService.getLocationUpdate(locationCallback)
-    }
-
     private fun askPermission(
         vararg permString: String, requestCode: Int,
         permRational: String) {
         if(EasyPermissions.hasPermissions(this, *permString)) {
-            refreshPage()
+            viewModel.refreshItems()
         } else {
             EasyPermissions.requestPermissions(this, permRational, requestCode, *permString)
         }
