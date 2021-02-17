@@ -7,7 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.telephony.*
+import android.telephony.TelephonyManager
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -19,12 +19,13 @@ import com.google.android.gms.location.LocationResult
 import com.google.android.material.snackbar.Snackbar
 import com.ilatyphi95.microlytxphoneinfo.BuildConfig
 import com.ilatyphi95.microlytxphoneinfo.R
+import com.ilatyphi95.microlytxphoneinfo.data.ItemUtils
 import com.ilatyphi95.microlytxphoneinfo.data.Items
 import com.ilatyphi95.microlytxphoneinfo.data.PhoneItem
 import com.ilatyphi95.microlytxphoneinfo.databinding.ActivityMainBinding
-import com.ilatyphi95.microlytxphoneinfo.getDefaultDataSubscriptionId
-import com.ilatyphi95.microlytxphoneinfo.getNetworkType
+import com.ilatyphi95.microlytxphoneinfo.utils.getNetworkType
 import com.ilatyphi95.microlytxphoneinfo.utils.LocationService
+import com.ilatyphi95.microlytxphoneinfo.utils.NetworkInfo
 import pub.devrel.easypermissions.EasyPermissions
 
 
@@ -37,6 +38,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     lateinit var binding : ActivityMainBinding
     lateinit var viewModel : MainActivityViewModel
     private lateinit var locationService : LocationService
+    private lateinit var itemUtil: ItemUtils
 
     private val locationCallback = object : LocationCallback() {
 
@@ -63,11 +65,12 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         locationService = LocationService(this)
+        itemUtil = ItemUtils(application)
 
         binding =
             DataBindingUtil.setContentView(this, R.layout.activity_main)
 
-        val viewModelFactory = MainActivityViewModelFactory(application)
+        val viewModelFactory = MainActivityViewModelFactory(application, itemUtil)
         viewModel =
             ViewModelProvider(this, viewModelFactory).get(MainActivityViewModel::class.java)
 
@@ -135,106 +138,26 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         )
     }
 
+    private fun updateSubscriberInfo() {
+        val networkInfo = NetworkInfo(application, itemUtil)
+
+        if(viewModel.checkPermission(Manifest.permission.READ_PHONE_STATE,
+        affectedItems = listOf(Items.MOBILE_NETWORK_CODE, Items.MOBILE_COUNTRY_CODE, Items.OPERATOR_NAME)
+        )) return
+
+        viewModel.updateInfo(networkInfo.getSubscriberInfo())
+
+    }
     private fun updateNetworkInfo() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+        val networkInfo = NetworkInfo(application, itemUtil)
 
-            if(viewModel.checkPermission(
-                    Manifest.permission.READ_PHONE_STATE,
-                    listOf(
-                        Items.MOBILE_NETWORK_CODE, Items.MOBILE_COUNTRY_CODE,
-                        Items.OPERATOR_NAME, Items.LOCAL_AREA_CODE,
-                        Items.CELL_ID, Items.CELL_IDENTITY, Items.SIGNAL_STRENGTH
-                    )
-                )) return
+        if(viewModel.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_PHONE_STATE,
+        affectedItems = listOf(Items.MOBILE_NETWORK_CODE, Items.MOBILE_COUNTRY_CODE, Items.OPERATOR_NAME,
+        Items.CELL_ID, Items.CELL_IDENTITY, Items.SIGNAL_STRENGTH, Items.LOCAL_AREA_CODE)
+        )) return
 
-            val subscriptionManager =
-                getSystemService(TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
-            val id = getDefaultDataSubscriptionId(subscriptionManager)
+        viewModel.updateInfo(networkInfo.getSubscriberInfo())
 
-            if (subscriptionManager.activeSubscriptionInfoList.size < 1) {
-                viewModel.updateNetworkInfo()
-                return
-            }
-
-            val subInfo = subscriptionManager.getActiveSubscriptionInfo(id) ?: return
-
-            val phoneManager = getSystemService(TELEPHONY_SERVICE) as TelephonyManager
-
-            val operatorInfo = mutableListOf<Pair<Items, Int>>()
-            val mcc = subInfo.mcc
-            val mnc = subInfo.mnc
-
-            val operatorName = subInfo.carrierName
-            viewModel.updateInfo(listOf(Pair(Items.OPERATOR_NAME, operatorName.toString())))
-
-            operatorInfo.addAll(
-                listOf(
-                    Pair(Items.MOBILE_COUNTRY_CODE, mcc),
-                    Pair(Items.MOBILE_NETWORK_CODE, mnc),
-                )
-            )
-
-            if (viewModel.checkPermission(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    listOf(
-                        Items.LOCAL_AREA_CODE, Items.CELL_ID, Items.CELL_IDENTITY,
-                        Items.SIGNAL_STRENGTH
-                    )
-                )) {
-                viewModel.updateInfoInt(operatorInfo)
-                return
-                }
-
-                val activeCells = phoneManager.allCellInfo.filter { it.isRegistered }
-
-                activeCells.forEach { cellInfo ->
-                    when (cellInfo) {
-                        is CellInfoGsm -> {
-                            val identity = cellInfo.cellIdentity
-
-                            if (identity.mcc == mcc && identity.mnc == mnc) {
-                                viewModel.updateNetworkInfo(
-                                    mcc = mcc, mnc = mnc,
-                                    signalStrength = cellInfo.cellSignalStrength.level,
-                                    cid = identity.cid, lac = identity.lac
-                                )
-                            }
-                        }
-                        is CellInfoWcdma -> {
-                            val identity = cellInfo.cellIdentity
-                            if (identity.mcc == mcc && identity.mnc == mnc) {
-
-                                viewModel.updateNetworkInfo(
-                                    mcc = mcc, mnc = mnc,
-                                    signalStrength = cellInfo.cellSignalStrength.level,
-                                    cid = identity.cid, lac = identity.lac
-                                )
-                            }
-                        }
-                        is CellInfoCdma -> {
-                            // check this out later
-                        }
-                        is CellInfoLte -> {
-                            val identity = cellInfo.cellIdentity
-                            if (identity.mcc == mcc && identity.mnc == mnc) {
-
-                                viewModel.updateNetworkInfo(
-                                    mcc = mcc, mnc = mnc, ci = identity.ci,
-                                    signalStrength = cellInfo.cellSignalStrength.level
-                                )
-                            }
-                        }
-
-                        else -> {
-                            viewModel.updateNetworkInfo()
-                        }
-                    }
-                }
-
-//            viewModel.updateInfoInt(operatorInfo)
-    //        } else {
-            // work this out later
-        }
     }
 
     override fun onResume() {
@@ -255,7 +178,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
 
         if (viewModel.checkPermission(
                 Manifest.permission.READ_PHONE_STATE,
-                listOf(Items.MOBILE_NETWORK_TECHNOLOGY)
+                affectedItems = listOf(Items.MOBILE_NETWORK_TECHNOLOGY)
             )) return
 
 
@@ -312,13 +235,14 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         updateConnectionStatus()
         updateNetwork()
         updateLocation()
+        updateSubscriberInfo()
         updateNetworkInfo()
     }
 
     private fun updateLocation() {
         if(viewModel.checkPermission(
                 Manifest.permission.ACCESS_FINE_LOCATION,
-                listOf(Items.LATITUDE, Items.LONGITUDE)
+                affectedItems = listOf(Items.LATITUDE, Items.LONGITUDE)
             )) return
 
         viewModel.updateInfoInt(

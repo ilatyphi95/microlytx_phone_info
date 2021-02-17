@@ -11,13 +11,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.ilatyphi95.microlytxphoneinfo.R
-import com.ilatyphi95.microlytxphoneinfo.data.ItemList
+import com.ilatyphi95.microlytxphoneinfo.data.ItemUtils
 import com.ilatyphi95.microlytxphoneinfo.data.Items
 import com.ilatyphi95.microlytxphoneinfo.data.PhoneItem
 
 const val NOT_AVAILABLE = -1
 const val REQUIRE_PERMISSION = -101
-class MainActivityViewModel(application: Application) : AndroidViewModel(application) {
+class MainActivityViewModel(application: Application, private val itemUtils: ItemUtils) : AndroidViewModel(application) {
 
     private val app = application
     private val notAvailable = application.getString(R.string.not_available)
@@ -27,11 +27,11 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
     val infoList : LiveData<List<PhoneItem>> = _infoList
 
     init {
-        _infoList.value = ItemList().getPhoneInfoList(app)
+        _infoList.value = itemUtils.getPhoneInfoList(app)
     }
 
     fun updateInfoInt(newItems: List<Pair<Items, Int>>) {
-        updateInfo( convertIntPairToStringPair(newItems) )
+        updateInfo( itemUtils.convertIntPairToStringPair(newItems) )
     }
 
     fun updateInfo(newItems: List<Pair<Items, String>>) {
@@ -102,24 +102,6 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
         return phoneItemList
     }
 
-    fun updateNetworkInfo(
-        mcc: Int = NOT_AVAILABLE,
-        mnc: Int = NOT_AVAILABLE,
-        signalStrength: Int = NOT_AVAILABLE,
-        cid: Int = NOT_AVAILABLE,
-        ci: Int = NOT_AVAILABLE,
-        lac: Int = NOT_AVAILABLE
-    ) {
-
-        updateInfoInt(listOf(
-                Pair(Items.MOBILE_COUNTRY_CODE, mcc),
-                Pair(Items.MOBILE_NETWORK_CODE, mnc),
-                Pair(Items.SIGNAL_STRENGTH, signalStrength),
-                Pair(Items.CELL_ID, cid),
-                Pair(Items.CELL_IDENTITY, ci),
-                Pair(Items.LOCAL_AREA_CODE, lac)))
-    }
-
     fun updateConnectionStatus() {
         var result = R.string.no_connection
         val connectivityManager =
@@ -153,9 +135,17 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
         updateInfo(listOf(Pair(Items.CELL_CONNECTION_STATUS, app.getString(result))))
     }
 
-    fun checkPermission(permString: String, affectedItems: List<Items>): Boolean {
+    fun checkPermission(vararg permString: String, affectedItems: List<Items>): Boolean {
 
-        if (ActivityCompat.checkSelfPermission(app, permString) != PackageManager.PERMISSION_GRANTED) {
+        var isGranted = true
+
+        permString.forEach { perm ->
+            if(ActivityCompat.checkSelfPermission(app, perm) != PackageManager.PERMISSION_GRANTED) {
+                isGranted = false
+            }
+        }
+
+        if (!isGranted) {
             val itemList = mutableListOf<Pair<Items, String>>()
 
             affectedItems.forEach{
@@ -163,8 +153,8 @@ class MainActivityViewModel(application: Application) : AndroidViewModel(applica
             }
 
             updateInfo(itemList)
-            return true
         }
-        return false
+
+        return isGranted
     }
 }

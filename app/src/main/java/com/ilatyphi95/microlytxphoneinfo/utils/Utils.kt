@@ -1,8 +1,9 @@
-package com.ilatyphi95.microlytxphoneinfo
+package com.ilatyphi95.microlytxphoneinfo.utils
 
 import android.os.Build
 import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
+import com.ilatyphi95.microlytxphoneinfo.R
 import java.lang.reflect.InvocationTargetException
 
 fun getDefaultDataSubscriptionId(subscriptionManager: SubscriptionManager): Int {

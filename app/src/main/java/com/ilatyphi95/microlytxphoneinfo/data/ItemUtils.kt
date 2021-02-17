@@ -1,13 +1,18 @@
 package com.ilatyphi95.microlytxphoneinfo.data
 
 import android.app.Application
+import android.content.Context
 import com.ilatyphi95.microlytxphoneinfo.R
 import com.ilatyphi95.microlytxphoneinfo.data.Items.*
+import com.ilatyphi95.microlytxphoneinfo.ui.NOT_AVAILABLE
+import com.ilatyphi95.microlytxphoneinfo.ui.REQUIRE_PERMISSION
 
-class ItemList {
+class ItemUtils(context: Context) {
+
+    private val notAvailable = context.getString(R.string.not_available)
+    private val requirePermission = context.getString(R.string.require_permission)
 
     fun getPhoneInfoList(app: Application): List<PhoneItem> {
-        val notAvailable = app.getString(R.string.not_available)
         return listOf(
             PhoneItem(MOBILE_COUNTRY_CODE, title = R.string.mobile_country_code, notAvailable),
             PhoneItem(MOBILE_NETWORK_CODE, title = R.string.mobile_network_code, notAvailable),
@@ -23,5 +28,24 @@ class ItemList {
             PhoneItem(LONGITUDE, title = R.string.longitude, notAvailable),
             PhoneItem(LATITUDE, title = R.string.latitude, notAvailable),
         )
+    }
+
+    fun convertIntPairToStringPair(intItems: List<Pair<Items, Int>>) :
+            List<Pair<Items, String>> {
+
+        val stringItems = mutableListOf<Pair<Items, String>>()
+
+        intItems.forEach{ pair ->
+
+            val second = when(pair.second) {
+                NOT_AVAILABLE -> notAvailable
+                REQUIRE_PERMISSION -> requirePermission
+                else -> pair.second.toString()
+            }
+
+            stringItems.add(Pair(pair.first, second))
+        }
+
+        return stringItems
     }
 }
