@@ -152,11 +152,10 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         val networkInfo = NetworkInfo(application, itemUtil)
 
         if(viewModel.checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_PHONE_STATE,
-        affectedItems = listOf(Items.MOBILE_NETWORK_CODE, Items.MOBILE_COUNTRY_CODE, Items.OPERATOR_NAME,
-        Items.CELL_ID, Items.CELL_IDENTITY, Items.SIGNAL_STRENGTH, Items.LOCAL_AREA_CODE)
+        affectedItems = listOf(Items.CELL_ID, Items.CELL_IDENTITY, Items.SIGNAL_STRENGTH, Items.LOCAL_AREA_CODE)
         )) return
 
-        viewModel.updateInfo(networkInfo.getSubscriberInfo())
+        viewModel.updateInfo(networkInfo.getNetworkInfo())
 
     }
 

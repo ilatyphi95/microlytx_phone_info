@@ -137,15 +137,15 @@ class MainActivityViewModel(application: Application, private val itemUtils: Ite
 
     fun checkPermission(vararg permString: String, affectedItems: List<Items>): Boolean {
 
-        var isGranted = true
+        var notGranted = false
 
         permString.forEach { perm ->
             if(ActivityCompat.checkSelfPermission(app, perm) != PackageManager.PERMISSION_GRANTED) {
-                isGranted = false
+                notGranted = true
             }
         }
 
-        if (!isGranted) {
+        if (notGranted) {
             val itemList = mutableListOf<Pair<Items, String>>()
 
             affectedItems.forEach{
@@ -155,6 +155,6 @@ class MainActivityViewModel(application: Application, private val itemUtils: Ite
             updateInfo(itemList)
         }
 
-        return isGranted
+        return notGranted
     }
 }
