@@ -3,9 +3,10 @@ package com.ilatyphi95.microlytxphoneinfo.data
 import android.content.Context
 import com.ilatyphi95.microlytxphoneinfo.R
 import com.ilatyphi95.microlytxphoneinfo.data.Items.*
-import com.ilatyphi95.microlytxphoneinfo.ui.NOT_AVAILABLE
-import com.ilatyphi95.microlytxphoneinfo.ui.REQUIRE_PERMISSION
+import java.lang.IllegalArgumentException
 
+const val NOT_AVAILABLE = -1
+const val REQUIRE_PERMISSION = -101
 class ItemUtils(context: Context) {
 
     private val notAvailable = context.getString(R.string.not_available)
@@ -78,6 +79,10 @@ class ItemUtils(context: Context) {
     fun replaceItems(oldList: List<PhoneItem>, newItem: PhoneItem) : List<PhoneItem> {
         val info = oldList.toMutableList()
         val oldItem = info.find { it.id == newItem.id }
+
+        if(oldItem == null)
+            throw IllegalArgumentException("$oldItem does not exist in list")
+
         val index = info.indexOf(oldItem)
         info.removeAt(index)
         info.add(index, newItem)

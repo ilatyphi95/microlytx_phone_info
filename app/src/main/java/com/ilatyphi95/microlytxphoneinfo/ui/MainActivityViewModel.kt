@@ -15,13 +15,12 @@ import com.google.android.gms.location.LocationResult
 import com.ilatyphi95.microlytxphoneinfo.R
 import com.ilatyphi95.microlytxphoneinfo.data.ItemUtils
 import com.ilatyphi95.microlytxphoneinfo.data.Items
+import com.ilatyphi95.microlytxphoneinfo.data.NOT_AVAILABLE
 import com.ilatyphi95.microlytxphoneinfo.data.PhoneItem
 import com.ilatyphi95.microlytxphoneinfo.utils.ConnectionInfo
 import com.ilatyphi95.microlytxphoneinfo.utils.NetworkInfo
 import com.ilatyphi95.microlytxphoneinfo.utils.getNetworkType
 
-const val NOT_AVAILABLE = -1
-const val REQUIRE_PERMISSION = -101
 class MainActivityViewModel(application: Application, private val itemUtils: ItemUtils) : AndroidViewModel(application) {
 
     private val app = application

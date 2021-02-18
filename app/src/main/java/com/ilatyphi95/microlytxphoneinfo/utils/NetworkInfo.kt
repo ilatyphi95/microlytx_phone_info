@@ -2,7 +2,6 @@ package com.ilatyphi95.microlytxphoneinfo.utils
 
 import android.Manifest
 import android.app.Application
-import android.content.Context
 import android.os.Build
 import android.telephony.*
 import androidx.annotation.RequiresPermission
@@ -10,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.ilatyphi95.microlytxphoneinfo.R
 import com.ilatyphi95.microlytxphoneinfo.data.ItemUtils
 import com.ilatyphi95.microlytxphoneinfo.data.Items
-import com.ilatyphi95.microlytxphoneinfo.ui.NOT_AVAILABLE
+import com.ilatyphi95.microlytxphoneinfo.data.NOT_AVAILABLE
 
 class NetworkInfo(private val context: Application, private val itemList: ItemUtils) {
     private val notAvailable = context.getString(R.string.not_available)
