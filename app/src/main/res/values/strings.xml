@@ -31,9 +31,9 @@
     <string name="network_4g">4G</string>
     <string name="network_4gplus">4G+</string>
     <string name="network_5g">5G</string>
-    <string name="read_phone_state_rational">Read phone state</string>
-    <string name="access_fine_location_rational">Access Fine Location</string>
-    <string name="all_permission_rational">The Following permissions are required</string>
+    <string name="read_phone_state_rational">Require phone state permission to show value</string>
+    <string name="access_fine_location_rational">Require fine location permission to show value</string>
+    <string name="all_permission_rational">Location permission and phone state permission are required to get correct value</string>
     <string name="grant">Grant</string>
     <string name="settings">Settings</string>
     <string name="long_permission_rational">\"You have previously declined this permission. You must approve this permission in \"Permissions\" in the app settings on your device.\"</string>

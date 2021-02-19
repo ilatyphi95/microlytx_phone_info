@@ -54,18 +54,21 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             adapter = itemAdapter
             addItemDecoration(DividerItemDecoration(this.context, DividerItemDecoration.VERTICAL))
         }
-        viewModel.infoList.observe(this) {
-            itemAdapter.submitList(it)
-        }
 
-        viewModel.receiveLocationUpdate.observe(this) { receiveUpdate ->
-            if(receiveUpdate) {
-                if (ActivityCompat.checkSelfPermission(
-                        this,
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                    ) == PackageManager.PERMISSION_GRANTED
-                ) {
-                    locationService.getLocationUpdate(viewModel.locationCallback)
+        viewModel.apply {
+            infoList.observe(this@MainActivity) {
+                itemAdapter.submitList(it)
+            }
+
+            receiveLocationUpdate.observe(this@MainActivity) { receiveUpdate ->
+                if(receiveUpdate) {
+                    if (ActivityCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                        ) == PackageManager.PERMISSION_GRANTED
+                    ) {
+                        locationService.getLocationUpdate(viewModel.locationCallback)
+                    }
                 }
             }
         }
@@ -108,7 +111,7 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
             }
 
             else -> {
-                // Do nothing
+                // Do nothing in this implementation
             }
         }
     }
