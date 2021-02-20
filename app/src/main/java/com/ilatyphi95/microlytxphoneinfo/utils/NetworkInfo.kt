@@ -1,6 +1,7 @@
 package com.ilatyphi95.microlytxphoneinfo.utils
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Application
 import android.os.Build
 import android.telephony.*
@@ -48,7 +49,7 @@ class NetworkInfo(private val context: Application, private val itemList: ItemUt
 
         val subInfo = subscriberInfo() ?: return itemList.convertIntPairToStringPair(networkInfo())
 
-            val activeCells = phoneManager.allCellInfo.filter { it.isRegistered }
+        val activeCells = phoneManager.allCellInfo.filter { it.isRegistered }
         var networkInfoList = networkInfo()
 
             activeCells.forEach { cellInfo ->
@@ -76,6 +77,7 @@ class NetworkInfo(private val context: Application, private val itemList: ItemUt
                     }
                     is CellInfoCdma -> {
                         // check this out later
+
                     }
                     is CellInfoLte -> {
                         val identity = cellInfo.cellIdentity
@@ -91,6 +93,7 @@ class NetworkInfo(private val context: Application, private val itemList: ItemUt
 
     }
 
+    @SuppressLint("MissingPermission")
     @RequiresPermission(Manifest.permission.READ_PHONE_STATE)
     private fun subscriberInfo() : SubscriberInfo? {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
@@ -103,7 +106,20 @@ class NetworkInfo(private val context: Application, private val itemList: ItemUt
                 SubscriberInfo(subInfo.mcc, subInfo.mnc, subInfo.carrierName.toString())
             } else {
                 //Take care ("VERSION.SDK_INT < LOLLIPOP_MR1")
-                null
+                val telephonyManager =
+                    context.getSystemService(AppCompatActivity.TELEPHONY_SERVICE) as TelephonyManager
+
+                val registeredNetworks = telephonyManager.allCellInfo.filter { it.isRegistered }
+                return if( registeredNetworks.size == 1) {
+
+                    val mccMnc = telephonyManager.networkOperator
+
+                    val mcc = mccMnc.substring(0, 3).toInt()
+                    val mnc = mccMnc.substring(3).toInt()
+                    SubscriberInfo(mcc, mnc, telephonyManager.networkOperatorName)
+                } else {
+                    null
+                }
             }
     }
 
