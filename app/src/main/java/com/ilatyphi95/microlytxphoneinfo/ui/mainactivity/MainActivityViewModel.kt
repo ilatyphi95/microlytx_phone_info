@@ -1,4 +1,4 @@
-package com.ilatyphi95.microlytxphoneinfo.ui
+package com.ilatyphi95.microlytxphoneinfo.ui.mainactivity
 
 import android.Manifest
 import android.app.Application

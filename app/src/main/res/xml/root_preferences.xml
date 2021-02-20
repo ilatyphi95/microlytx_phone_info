@@ -1,0 +1,11 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <ListPreference
+        android:icon="@drawable/dark_mode"
+        app:defaultValue="@string/key_auto"
+        app:entries="@array/theme_mode_entries"
+        app:entryValues="@array/theme_mode_values"
+        app:key="@string/theme_key"
+        app:title="@string/select_theme"
+        app:useSimpleSummaryProvider="true" />
+</PreferenceScreen>

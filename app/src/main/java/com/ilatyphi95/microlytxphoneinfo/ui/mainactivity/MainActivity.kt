@@ -1,4 +1,4 @@
-package com.ilatyphi95.microlytxphoneinfo.ui
+package com.ilatyphi95.microlytxphoneinfo.ui.mainactivity
 
 import android.Manifest
 import android.content.Intent
@@ -7,6 +7,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -21,6 +23,7 @@ import com.ilatyphi95.microlytxphoneinfo.data.ItemUtils
 import com.ilatyphi95.microlytxphoneinfo.data.Items
 import com.ilatyphi95.microlytxphoneinfo.data.PhoneItem
 import com.ilatyphi95.microlytxphoneinfo.databinding.ActivityMainBinding
+import com.ilatyphi95.microlytxphoneinfo.ui.preferenceActivity.SettingsActivity
 import com.ilatyphi95.microlytxphoneinfo.utils.LocationService
 import pub.devrel.easypermissions.EasyPermissions
 
@@ -83,6 +86,32 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
         )
     }
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.updateLocation()
+    }
+
+    override fun onPause() {
+        locationService.removeLocationUpdate(viewModel.locationCallback)
+        super.onPause()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when(item.itemId) {
+            R.id.action_settings -> {
+                startActivity(Intent(this, SettingsActivity::class.java))
+                true
+            }
+
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
     private fun recyclerItemClicked(item: PhoneItem) {
         when(item.id) {
 
@@ -114,16 +143,6 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
                 // Do nothing in this implementation
             }
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        viewModel.updateLocation()
-    }
-
-    override fun onPause() {
-        locationService.removeLocationUpdate(viewModel.locationCallback)
-        super.onPause()
     }
 
     override fun onRequestPermissionsResult(

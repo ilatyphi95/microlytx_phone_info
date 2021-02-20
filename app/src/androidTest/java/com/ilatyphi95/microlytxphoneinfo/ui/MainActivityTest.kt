@@ -22,6 +22,7 @@ import com.ilatyphi95.microlytxphoneinfo.clickOnViewChild
 import com.ilatyphi95.microlytxphoneinfo.data.ItemUtils
 import com.ilatyphi95.microlytxphoneinfo.data.Items
 import com.ilatyphi95.microlytxphoneinfo.data.PhoneItem
+import com.ilatyphi95.microlytxphoneinfo.ui.mainactivity.MainActivity
 import org.hamcrest.Matchers.allOf
 import org.hamcrest.Matchers.not
 import org.junit.Rule
