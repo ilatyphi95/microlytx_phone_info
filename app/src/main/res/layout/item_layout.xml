@@ -20,7 +20,7 @@
             setTextFromRes="@{viewmodel.title}"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="16sp"
+            android:textSize="@dimen/text_size"
             app:layout_constraintBottom_toBottomOf="@+id/value"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@+id/value"
@@ -31,7 +31,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/separator"
-            android:textSize="18sp"
+            android:textSize="@dimen/text_size"
             app:layout_constraintBottom_toBottomOf="@+id/value"
             app:layout_constraintStart_toEndOf="@+id/title"
             app:layout_constraintTop_toTopOf="@+id/value" />
