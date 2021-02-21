@@ -4,12 +4,17 @@ import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
 import android.os.Build
-import android.telephony.TelephonyManager
+import android.telephony.*
+import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationResult
 import com.ilatyphi95.microlytxphoneinfo.R
@@ -20,6 +25,9 @@ import com.ilatyphi95.microlytxphoneinfo.data.PhoneItem
 import com.ilatyphi95.microlytxphoneinfo.utils.ConnectionInfo
 import com.ilatyphi95.microlytxphoneinfo.utils.NetworkInfo
 import com.ilatyphi95.microlytxphoneinfo.utils.getNetworkType
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivityViewModel(application: Application, private val itemUtils: ItemUtils) : AndroidViewModel(application) {
 
@@ -36,7 +44,7 @@ class MainActivityViewModel(application: Application, private val itemUtils: Ite
     init {
         _infoList.value = itemUtils.getPhoneInfoList()
         updateManufacturerInfo()
-        updateConnectionStatus()
+        refreshItems()
     }
 
     val locationCallback = object : LocationCallback() {
@@ -57,6 +65,48 @@ class MainActivityViewModel(application: Application, private val itemUtils: Ite
                         Pair(Items.LONGITUDE, NOT_AVAILABLE)
                     )
                 )
+            }
+        }
+    }
+
+
+    val phoneStateListener: PhoneStateListener = object : PhoneStateListener() {
+        override fun onSignalStrengthsChanged(signalStrength: SignalStrength?) {
+            updateNetworkInfo()
+        }
+
+        override fun onServiceStateChanged(serviceState: ServiceState?) {
+            updateNetworkInfo()
+            updateSubscriberInfo()
+            updateSubscriberInfo()
+        }
+    }
+
+    val connectivityListener = @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            updateItems()
+        }
+
+        override fun onLost(network: Network) {
+            updateItems()
+        }
+
+        override fun onCapabilitiesChanged(
+            network: Network,
+            networkCapabilities: NetworkCapabilities
+        ) {
+            updateItems()
+        }
+    }
+
+    private fun updateItems() {
+        viewModelScope.launch {
+            withContext(Dispatchers.Main) {
+                updateConnectionStatus()
+                updateNetworkInfo()
+                updateNetworkTypeInfo()
+                updateSubscriberInfo()
             }
         }
     }

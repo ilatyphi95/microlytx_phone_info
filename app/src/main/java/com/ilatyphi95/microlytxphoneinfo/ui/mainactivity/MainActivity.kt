@@ -3,10 +3,15 @@ package com.ilatyphi95.microlytxphoneinfo.ui.mainactivity
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.telephony.PhoneStateListener
+import android.telephony.TelephonyManager
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.TextView
@@ -38,10 +43,14 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     private lateinit var viewModel : MainActivityViewModel
     private lateinit var locationService : LocationService
     private lateinit var itemUtil: ItemUtils
+    private lateinit var telephonyManager: TelephonyManager
+    private lateinit var connectivityManager: ConnectivityManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         locationService = LocationService(this)
+        telephonyManager = getSystemService(TELEPHONY_SERVICE) as TelephonyManager
+        connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
         itemUtil = ItemUtils(application)
 
         binding =
@@ -89,10 +98,25 @@ class MainActivity : AppCompatActivity(), EasyPermissions.PermissionCallbacks {
     override fun onResume() {
         super.onResume()
         viewModel.updateLocation()
+        telephonyManager.listen(viewModel.phoneStateListener,
+            (PhoneStateListener.LISTEN_SIGNAL_STRENGTHS or PhoneStateListener.LISTEN_SERVICE_STATE)
+        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val networkRequest =
+                NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .build()
+            connectivityManager.registerNetworkCallback(networkRequest, viewModel.connectivityListener)
+        }
     }
 
     override fun onPause() {
         locationService.removeLocationUpdate(viewModel.locationCallback)
+        telephonyManager.listen(viewModel.phoneStateListener, PhoneStateListener.LISTEN_NONE)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            connectivityManager.unregisterNetworkCallback(viewModel.connectivityListener)
+        }
         super.onPause()
     }
 
