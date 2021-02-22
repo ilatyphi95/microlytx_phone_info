@@ -4,6 +4,7 @@ package com.ilatyphi95.microlytxphoneinfo.ui
 import android.os.Build
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.Espresso.openActionBarOverflowOrOptionsMenu
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.contrib.RecyclerViewActions
@@ -265,6 +266,17 @@ class MainActivityTest {
                 ))
                 ))
         }
+    }
+
+    @Test
+    fun clickingMenuSetting_shouldNavigateTo_settingsScreen() {
+        denyPermission()
+        denyPermission()
+        openActionBarOverflowOrOptionsMenu(appContext)
+        onView(
+            withText(appContext.getString(R.string.settings))).perform(click())
+
+        onView(withText(appContext.getString(R.string.select_theme))).check(matches(isDisplayed()))
     }
 
     private fun removeList(universalList: List<PhoneItem>, subList: List<PhoneItem>) : List<PhoneItem> {
