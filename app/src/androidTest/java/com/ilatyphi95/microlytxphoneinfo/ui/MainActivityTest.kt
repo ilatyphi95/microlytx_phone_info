@@ -146,7 +146,6 @@ class MainActivityTest {
         }
     }
 
-
     @Test
     fun allPermissionGranted_shouldEnable_allFields() {
         // when
@@ -285,7 +284,6 @@ class MainActivityTest {
         subList.forEach{ item ->
             workingList.removeIf{ it.id == item.id }
         }
-
         return workingList
     }
 

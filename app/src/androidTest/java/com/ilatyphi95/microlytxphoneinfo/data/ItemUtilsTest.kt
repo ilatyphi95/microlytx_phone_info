@@ -24,9 +24,9 @@ class ItemUtilsTest {
     fun convertIntPairToStringPair_shouldReturn_sameSizeAsInput() {
         // given
         val inList = listOf(
-            Pair(Items.LOCAL_AREA_CODE, 101),
-            Pair(Items.MOBILE_COUNTRY_CODE, 201),
-            Pair(Items.MOBILE_NETWORK_CODE, 301)
+            Items.LOCAL_AREA_CODE to 101,
+            Items.MOBILE_COUNTRY_CODE to 201,
+            Items.MOBILE_NETWORK_CODE to 301
             )
 
         // when
@@ -40,9 +40,9 @@ class ItemUtilsTest {
     fun convertIntPairToStringPair_shouldReturn_correctValue() {
         // given
         val inList = listOf(
-            Pair(Items.LOCAL_AREA_CODE, 101),
-            Pair(Items.MOBILE_COUNTRY_CODE, 201),
-            Pair(Items.MOBILE_NETWORK_CODE, 301)
+            Items.LOCAL_AREA_CODE to 101,
+            Items.MOBILE_COUNTRY_CODE to 201,
+            Items.MOBILE_NETWORK_CODE to 301
             )
 
         // when
@@ -58,7 +58,7 @@ class ItemUtilsTest {
     fun convertIntPairToStringPair_shouldReturn_noAvailable() {
         // given
         val inList = listOf(
-            Pair(Items.LOCAL_AREA_CODE, NOT_AVAILABLE)
+                Items.LOCAL_AREA_CODE to NOT_AVAILABLE
             )
 
         // when
@@ -72,7 +72,7 @@ class ItemUtilsTest {
     fun convertIntPairToStringPair_shouldReturn_requirePermission() {
         // given
         val inList = listOf(
-            Pair(Items.LOCAL_AREA_CODE, REQUIRE_PERMISSION)
+            Items.LOCAL_AREA_CODE to REQUIRE_PERMISSION
             )
 
         // when
@@ -120,9 +120,9 @@ class ItemUtilsTest {
     fun convertItemsToPhoneItems_shouldReturn_sizeOfInput() {
         // given
         val inList = listOf(
-            Pair(Items.MOBILE_NETWORK_CODE, "13"),
-            Pair(Items.MOBILE_COUNTRY_CODE, "302"),
-            Pair(Items.OPERATOR_NAME, "airtel")
+            Items.MOBILE_NETWORK_CODE to "13",
+                Items.MOBILE_COUNTRY_CODE to "302",
+            Items.OPERATOR_NAME to "airtel"
         )
 
         // when
@@ -139,9 +139,9 @@ class ItemUtilsTest {
     fun convertItemsToPhoneItems_shouldReturn_haveItemsInOrder() {
         // given
         val inList = listOf(
-            Pair(Items.MOBILE_NETWORK_CODE, "13"),
-            Pair(Items.MOBILE_COUNTRY_CODE, "302"),
-            Pair(Items.OPERATOR_NAME, "airtel")
+            Items.MOBILE_NETWORK_CODE to "13",
+            Items.MOBILE_COUNTRY_CODE to "302",
+            Items.OPERATOR_NAME to "airtel"
         )
 
         // when

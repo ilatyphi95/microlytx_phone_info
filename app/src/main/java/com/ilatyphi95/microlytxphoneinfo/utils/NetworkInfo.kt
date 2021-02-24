@@ -29,15 +29,15 @@ class NetworkInfo(private val context: Application, private val itemList: ItemUt
         val subInfo = subscriberInfo()
         return if(subInfo != null) {
             listOf(
-                Pair(Items.MOBILE_COUNTRY_CODE, subInfo.mcc.toString()),
-                Pair(Items.MOBILE_NETWORK_CODE,subInfo.mnc.toString()),
-                Pair(Items.OPERATOR_NAME, subInfo.networkOperator),
+                Items.MOBILE_COUNTRY_CODE to subInfo.mcc.toString(),
+                Items.MOBILE_NETWORK_CODE to subInfo.mnc.toString(),
+                Items.OPERATOR_NAME to subInfo.networkOperator
             )
         } else {
             listOf(
-                Pair(Items.MOBILE_COUNTRY_CODE, notAvailable),
-                Pair(Items.MOBILE_NETWORK_CODE, notAvailable),
-                Pair(Items.OPERATOR_NAME, notAvailable),
+                Items.MOBILE_COUNTRY_CODE to notAvailable,
+                Items.MOBILE_NETWORK_CODE to notAvailable,
+                Items.OPERATOR_NAME to notAvailable
             )
         }
     }
@@ -131,10 +131,10 @@ class NetworkInfo(private val context: Application, private val itemList: ItemUt
     ) : List<Pair<Items, Int>> {
 
         return (listOf(
-            Pair(Items.SIGNAL_STRENGTH, signalStrength),
-            Pair(Items.CELL_ID, cid),
-            Pair(Items.CELL_IDENTITY, ci),
-            Pair(Items.LOCAL_AREA_CODE, lac)))
+            Items.SIGNAL_STRENGTH to signalStrength,
+            Items.CELL_ID to cid,
+            Items.CELL_IDENTITY to ci,
+            Items.LOCAL_AREA_CODE to lac))
     }
 
     private class SubscriberInfo(val mcc: Int, val mnc: Int, val networkOperator: String)

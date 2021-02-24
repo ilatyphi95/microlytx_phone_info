@@ -25,8 +25,6 @@ class SettingsActivity : AppCompatActivity() {
     class SettingsFragment : PreferenceFragmentCompat() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             setPreferencesFromResource(R.xml.root_preferences, rootKey)
-
-//            setHasOptionsMenu(true)
         }
 
         override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,12 +38,11 @@ class SettingsActivity : AppCompatActivity() {
 
                 if( newValue is String) {
                     when(newValue) {
-                        auto -> updateTheme(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_AUTO)
-                        light -> updateTheme(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO)
-                        dark -> updateTheme(androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES)
+                        auto -> updateTheme(AppCompatDelegate.MODE_NIGHT_AUTO)
+                        light -> updateTheme(AppCompatDelegate.MODE_NIGHT_NO)
+                        dark -> updateTheme(AppCompatDelegate.MODE_NIGHT_YES)
                     }
                 }
-
                 true
             }
         }

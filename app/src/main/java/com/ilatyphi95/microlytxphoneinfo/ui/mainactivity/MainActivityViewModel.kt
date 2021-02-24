@@ -54,15 +54,15 @@ class MainActivityViewModel(application: Application, private val itemUtils: Ite
                 val latLon = location.lastLocation
                 updateInfo(
                     listOf(
-                        Pair(Items.LATITUDE, latLon.latitude.toString()),
-                        Pair(Items.LONGITUDE, latLon.longitude.toString())
+                        Items.LATITUDE to latLon.latitude.toString(),
+                        Items.LONGITUDE to latLon.longitude.toString()
                     )
                 )
             } else {
                 updateInfoInt(
                     listOf(
-                        Pair(Items.LATITUDE, NOT_AVAILABLE),
-                        Pair(Items.LONGITUDE, NOT_AVAILABLE)
+                        Items.LATITUDE to NOT_AVAILABLE,
+                        Items.LONGITUDE to NOT_AVAILABLE
                     )
                 )
             }
@@ -144,8 +144,8 @@ class MainActivityViewModel(application: Application, private val itemUtils: Ite
     private fun updateManufacturerInfo() {
         updateInfo(
             listOf(
-                Pair(Items.HANDSET_MAKE, Build.MANUFACTURER),
-                Pair(Items.ITEM_MODEL, Build.MODEL),
+                Items.HANDSET_MAKE to Build.MANUFACTURER,
+                Items.ITEM_MODEL to Build.MODEL
             )
         )
     }
@@ -174,7 +174,7 @@ class MainActivityViewModel(application: Application, private val itemUtils: Ite
 
         updateInfo(
             listOf(
-                Pair(Items.MOBILE_NETWORK_TECHNOLOGY, value)
+                    Items.MOBILE_NETWORK_TECHNOLOGY to value
             )
         )
     }
@@ -201,8 +201,8 @@ class MainActivityViewModel(application: Application, private val itemUtils: Ite
 
         updateInfoInt(
             listOf(
-                Pair(Items.LATITUDE, NOT_AVAILABLE),
-                Pair(Items.LONGITUDE, NOT_AVAILABLE)
+                Items.LATITUDE to NOT_AVAILABLE,
+                Items.LONGITUDE to NOT_AVAILABLE
             )
         )
 
@@ -223,7 +223,7 @@ class MainActivityViewModel(application: Application, private val itemUtils: Ite
             val itemList = mutableListOf<Pair<Items, String>>()
 
             affectedItems.forEach{
-                itemList.add(Pair(it, requirePermission))
+                itemList.add(it to requirePermission)
             }
             updateInfo(itemList)
         }
